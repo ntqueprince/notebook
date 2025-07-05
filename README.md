@@ -942,10 +942,8 @@
     </style>
 </head>
 <body>
-    <!-- Particles for background effects -->
     <div id="particles"></div>
     
-    <!-- Header -->
     <header>
         <div class="container">
             <div class="header-content">
@@ -997,7 +995,6 @@
         </div>
     </header>
 
-    <!-- Auth Section -->
     <section class="auth-section" id="authSection">
         <div class="auth-container">
             <div class="auth-header">
@@ -1031,14 +1028,12 @@
         </div>
     </section>
 
-    <!-- Notes Section -->
     <section class="notes-section container" id="notesSection">
         <div class="welcome-message">
             <h2>Your Personal Notebook</h2>
             <p>Create, organize, and manage your notes, tasks, and routines all in one place.</p>
         </div>
         <div class="notes-container" id="notesContainer">
-            <!-- Notes will be dynamically added here -->
             <div class="note-card add-note" id="addNoteBtn">
                 <i class="fas fa-plus-circle"></i>
                 <p>Add New Note</p>
@@ -1046,7 +1041,6 @@
         </div>
     </section>
 
-    <!-- Note Modal -->
     <div class="modal" id="noteModal">
         <div class="modal-content" id="modalContent">
             <button class="close-modal" id="closeModal">&times;</button>
@@ -1074,7 +1068,6 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div class="toast" id="toast">
         <i class="fas fa-check-circle"></i>
         <span id="toastMessage">Operation completed successfully!</span>
@@ -1082,8 +1075,8 @@
 
     <script>
         // Initialize Supabase
-        const supabaseUrl = 'https://your-supabase-url.supabase.co';
-        const supabaseKey = 'your-supabase-public-key';
+        const supabaseUrl = 'https://amsrxpzwgjleqebacgpl.supabase.co'; //
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtc3J4cHp3Z2psZXFlYmFjZ3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NDQ1MDcsImV4cCI6MjA2NzMyMDUwN30.rka0TwVVu2virQPNThD5q4uBxVwQjjBUp5Odzag2JYc'; //
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // DOM Elements
@@ -1111,7 +1104,7 @@
         const noteModal = document.getElementById('noteModal');
         const closeModal = document.getElementById('closeModal');
         const modalTitle = document.getElementById('modalTitle');
-        const noteForm = document.getElementById('noteForm');
+        // const noteForm = document.getElementById('noteForm'); // This element doesn't exist in HTML
         const noteTitle = document.getElementById('noteTitle');
         const noteContent = document.getElementById('noteContent');
         const cancelNoteBtn = document.getElementById('cancelNoteBtn');
@@ -1164,7 +1157,7 @@
             if (document.body.classList.contains('dark-mode')) {
                 icon.classList.remove('fa-moon');
                 icon.classList.add('fa-sun');
-                createParticles();
+                // particles need to be re-created or re-colored for dark mode if desired
             } else {
                 icon.classList.remove('fa-sun');
                 icon.classList.add('fa-moon');
@@ -1234,64 +1227,79 @@
             });
         }
 
-        // Form Submission
+        // --- Supabase Auth Integration ---
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const name = document.getElementById('name').value;
-            
-            if (isVerificationMode) {
-                const verificationCode = document.getElementById('verificationCode').value;
-                // Verify the code (implementation needed)
-                showToast('Account verified successfully!', 'success');
-                isVerificationMode = false;
-                verificationGroup.style.display = 'none';
-                isLoginMode = true;
-                updateAuthUI();
-                return;
-            }
-            
+            const name = document.getElementById('name').value; // For signup
+
             if (isLoginMode) {
-                // Simulate login
-                if (email && password) {
-                    currentUser = {
-                        id: 'user123',
-                        email: email,
-                        name: name || 'John Doe'
-                    };
-                    showToast('Login successful!', 'success');
-                    updateUIAfterAuth();
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    showToast(error.message, 'error');
                 } else {
-                    showToast('Please fill all fields', 'error');
+                    showToast('Login successful!', 'success');
+                    // updateUIAfterAuth will be called by onAuthStateChange
                 }
             } else {
-                // Simulate signup
-                if (email && password && name) {
-                    // Show verification step
-                    isVerificationMode = true;
-                    verificationGroup.style.display = 'block';
-                    showToast('Verification code sent to your email', 'info');
-                } else {
-                    showToast('Please fill all fields', 'error');
+                // Sign up
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name // Store full name in user metadata
+                        }
+                    }
+                });
+
+                if (error) {
+                    showToast(error.message, 'error');
+                } else if (data.user) {
+                    showToast('Signup successful! Please check your email for verification.', 'info');
+                    // No need for separate verification step, Supabase handles email confirmation
+                    isLoginMode = true; // Switch back to login mode after signup attempt
+                    updateAuthUI();
                 }
             }
         });
 
         // Logout
-        logoutBtn.addEventListener('click', () => {
-            currentUser = null;
-            authSection.style.display = 'flex';
-            notesSection.style.display = 'none';
-            profileDropdown.style.display = 'none';
-            authButtons.style.display = 'flex';
-            dropdownOpen = false;
-            dropdownContent.classList.remove('show');
-            showToast('Logged out successfully', 'success');
+        logoutBtn.addEventListener('click', async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                showToast('Logged out successfully', 'success');
+                // updateUIAfterAuth will be called by onAuthStateChange
+            }
         });
 
-        // Note Management
+        // Supabase Auth State Change Listener
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                currentUser = session.user;
+                updateUIAfterAuth();
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                authSection.style.display = 'flex';
+                notesSection.style.display = 'none';
+                profileDropdown.style.display = 'none';
+                authButtons.style.display = 'flex';
+                dropdownOpen = false;
+                dropdownContent.classList.remove('show');
+                notesContainer.innerHTML = ''; // Clear notes when logged out
+                notesContainer.appendChild(addNoteBtn); // Re-add the add note button
+            }
+        });
+
+        // --- Note Management ---
         addNoteBtn.addEventListener('click', () => {
             currentNoteId = null;
             noteTitle.value = '';
@@ -1313,7 +1321,7 @@
             noteModal.style.display = 'none';
         });
 
-        saveNoteBtn.addEventListener('click', (e) => {
+        saveNoteBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             const title = noteTitle.value;
             const content = noteContent.value;
@@ -1322,37 +1330,82 @@
                 showToast('Please fill both title and content', 'error');
                 return;
             }
+
+            if (!currentUser) {
+                showToast('Please login to save notes.', 'error');
+                return;
+            }
             
             if (currentNoteId) {
                 // Update existing note
-                showToast('Note updated successfully', 'success');
+                const { data, error } = await supabase
+                    .from('notes')
+                    .update({ title, content })
+                    .eq('id', currentNoteId)
+                    .select();
+
+                if (error) {
+                    showToast(error.message, 'error');
+                } else {
+                    showToast('Note updated successfully', 'success');
+                    fetchNotes(); // Re-fetch notes to update UI
+                }
             } else {
                 // Create new note
-                createNoteCard(title, content);
-                showToast('Note created successfully', 'success');
+                const { data, error } = await supabase
+                    .from('notes')
+                    .insert([
+                        { title, content, user_id: currentUser.id }
+                    ])
+                    .select(); // Use .select() to get the inserted data including generated ID
+
+                if (error) {
+                    showToast(error.message, 'error');
+                } else if (data && data.length > 0) {
+                    showToast('Note created successfully', 'success');
+                    fetchNotes(); // Re-fetch notes to update UI
+                }
             }
             
             noteModal.style.display = 'none';
         });
 
-        // Create sample notes
-        function createSampleNotes() {
-            const sampleNotes = [
-                { id: 1, title: 'Meeting Notes', content: 'Discussed project timeline and deliverables for Q3. Need to follow up with design team.', date: '2 hours ago' },
-                { id: 2, title: 'Shopping List', content: 'Milk, Eggs, Bread, Fruits, Vegetables, Coffee', date: 'Yesterday' },
-                { id: 3, title: 'Project Ideas', content: '1. Mobile app for task management\n2. E-commerce platform\n3. Fitness tracking application', date: 'Jun 15, 2023' },
-                { id: 4, title: 'Book Recommendations', content: '1. Atomic Habits - James Clear\n2. Deep Work - Cal Newport\n3. The Psychology of Money - Morgan Housel', date: 'Jun 10, 2023' }
-            ];
+        // Fetch notes from Supabase
+        async function fetchNotes() {
+            if (!currentUser) {
+                notesContainer.innerHTML = '';
+                notesContainer.appendChild(addNoteBtn);
+                return;
+            }
             
-            sampleNotes.forEach(note => {
-                createNoteCard(note.title, note.content, note.date, note.id);
-            });
+            // Clear existing notes except the add button
+            const existingNotes = notesContainer.querySelectorAll('.note-card:not(.add-note)');
+            existingNotes.forEach(note => note.remove());
+
+            const { data, error } = await supabase
+                .from('notes')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                data.forEach(note => {
+                    // Convert ISO string to a more readable format or relative time
+                    const date = new Date(note.created_at).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                    createNoteCard(note.title, note.content, date, note.id);
+                });
+            }
         }
         
         function createNoteCard(title, content, date = 'Just now', id = null) {
             const noteCard = document.createElement('div');
             noteCard.className = 'note-card';
-            noteCard.dataset.id = id || Date.now();
+            noteCard.dataset.id = id; // Store Supabase ID here
             
             noteCard.innerHTML = `
                 <div class="note-header">
@@ -1389,27 +1442,43 @@
                 icon.classList.add('fa-expand');
             });
             
-            noteCard.querySelector('.delete-note').addEventListener('click', () => {
-                noteCard.style.animation = 'fadeOut 0.5s forwards';
-                setTimeout(() => {
-                    noteCard.remove();
-                }, 500);
-                showToast('Note deleted', 'success');
+            noteCard.querySelector('.delete-note').addEventListener('click', async () => {
+                const noteIdToDelete = noteCard.dataset.id;
+                if (!noteIdToDelete) {
+                    showToast('Error: Note ID missing.', 'error');
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from('notes')
+                    .delete()
+                    .eq('id', noteIdToDelete);
+
+                if (error) {
+                    showToast(error.message, 'error');
+                } else {
+                    noteCard.style.animation = 'fadeOut 0.5s forwards';
+                    setTimeout(() => {
+                        noteCard.remove();
+                    }, 500);
+                    showToast('Note deleted', 'success');
+                }
             });
         }
         
-        function updateUIAfterAuth() {
+        async function updateUIAfterAuth() {
             authSection.style.display = 'none';
             notesSection.style.display = 'block';
             profileDropdown.style.display = 'block';
             authButtons.style.display = 'none';
-            userName.textContent = currentUser.name;
+            
+            // Get user data from currentUser object
+            const userFullName = currentUser.user_metadata?.full_name || currentUser.email;
+            userName.textContent = userFullName;
             userEmail.textContent = currentUser.email;
             
-            // Clear existing notes and add sample ones
-            notesContainer.innerHTML = '';
-            notesContainer.appendChild(addNoteBtn);
-            createSampleNotes();
+            // Fetch and display user-specific notes
+            await fetchNotes();
         }
         
         function showToast(message, type = 'success') {
@@ -1423,7 +1492,15 @@
 
         // Initialize
         createParticles();
-        updateAuthUI();
+        // Check initial auth state and update UI
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                currentUser = session.user;
+                updateUIAfterAuth();
+            } else {
+                updateAuthUI(); // Show auth section if no session
+            }
+        });
     </script>
 </body>
 </html>
