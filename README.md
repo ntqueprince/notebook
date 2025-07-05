@@ -1023,7 +1023,7 @@
                 </button>
             </form>
             <div class="form-footer">
-                <p id="authToggle">Don't have an account? <a href="#" id="toggleAuth">Sign Up</a></p>
+                <p id="authToggle">Don't have an account? <a href="#" id="toggleAuthLink">Sign Up</a></p>
             </div>
         </div>
     </section>
@@ -1096,7 +1096,7 @@
         const authTitle = document.getElementById('authTitle');
         const authSubtitle = document.getElementById('authSubtitle');
         const authSubmit = document.getElementById('authSubmit');
-        const toggleAuth = document.getElementById('toggleAuth');
+        const toggleAuthLink = document.getElementById('toggleAuthLink'); // Renamed to avoid confusion
         const nameGroup = document.getElementById('nameGroup');
         const verificationGroup = document.getElementById('verificationGroup');
         const notesContainer = document.getElementById('notesContainer');
@@ -1104,7 +1104,6 @@
         const noteModal = document.getElementById('noteModal');
         const closeModal = document.getElementById('closeModal');
         const modalTitle = document.getElementById('modalTitle');
-        // const noteForm = document.getElementById('noteForm'); // This element doesn't exist in HTML
         const noteTitle = document.getElementById('noteTitle');
         const noteContent = document.getElementById('noteContent');
         const cancelNoteBtn = document.getElementById('cancelNoteBtn');
@@ -1122,6 +1121,7 @@
         let currentNoteId = null;
         let dropdownOpen = false;
         let isFullscreen = false;
+        let isSavingNote = false; // New flag to prevent duplicate saves
 
         // Create particles
         function createParticles() {
@@ -1157,7 +1157,6 @@
             if (document.body.classList.contains('dark-mode')) {
                 icon.classList.remove('fa-moon');
                 icon.classList.add('fa-sun');
-                // particles need to be re-created or re-colored for dark mode if desired
             } else {
                 icon.classList.remove('fa-sun');
                 icon.classList.add('fa-moon');
@@ -1193,8 +1192,8 @@
             }
         });
 
-        // Auth Mode Toggle
-        toggleAuth.addEventListener('click', (e) => {
+        // Auth Mode Toggle (FIXED: Attach listener only once)
+        toggleAuthLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
             updateAuthUI();
@@ -1205,26 +1204,19 @@
                 authTitle.textContent = 'Welcome Back!';
                 authSubtitle.textContent = 'Please sign in to access your notebook';
                 authSubmit.textContent = 'Sign In';
-                toggleAuth.textContent = 'Sign Up';
-                document.querySelector('#authToggle p').innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuth">Sign Up</a>';
+                toggleAuthLink.textContent = 'Sign Up'; // Ensure link text updates correctly
+                document.querySelector('#authToggle p').innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuthLink">Sign Up</a>';
                 nameGroup.style.display = 'none';
                 verificationGroup.style.display = 'none';
             } else {
                 authTitle.textContent = 'Create Account';
                 authSubtitle.textContent = 'Join us to start your notebook journey';
                 authSubmit.textContent = 'Sign Up';
-                toggleAuth.textContent = 'Sign In';
-                document.querySelector('#authToggle p').innerHTML = 'Already have an account? <a href="#" id="toggleAuth">Sign In</a>';
+                toggleAuthLink.textContent = 'Sign In'; // Ensure link text updates correctly
+                document.querySelector('#authToggle p').innerHTML = 'Already have an account? <a href="#" id="toggleAuthLink">Sign In</a>';
                 nameGroup.style.display = 'block';
                 verificationGroup.style.display = 'none';
             }
-            
-            // Reattach event listener after updating content
-            document.getElementById('toggleAuth').addEventListener('click', (e) => {
-                e.preventDefault();
-                isLoginMode = !isLoginMode;
-                updateAuthUI();
-            });
         }
 
         // --- Supabase Auth Integration ---
@@ -1263,7 +1255,6 @@
                     showToast(error.message, 'error');
                 } else if (data.user) {
                     showToast('Signup successful! Please check your email for verification.', 'info');
-                    // No need for separate verification step, Supabase handles email confirmation
                     isLoginMode = true; // Switch back to login mode after signup attempt
                     updateAuthUI();
                 }
@@ -1321,8 +1312,18 @@
             noteModal.style.display = 'none';
         });
 
+        // RECTIFIED CODE FOR SAVE NOTE BUTTON (with isSavingNote flag and console.count for debugging)
         saveNoteBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
+            console.count('Save button click handler fired'); // Check how many times this runs
+
+            e.preventDefault(); 
+            
+            // If already in the process of saving, ignore subsequent clicks
+            if (isSavingNote) {
+                console.log('Already saving, ignoring duplicate request.');
+                return;
+            }
+
             const title = noteTitle.value;
             const content = noteContent.value;
             
@@ -1336,38 +1337,53 @@
                 return;
             }
             
-            if (currentNoteId) {
-                // Update existing note
-                const { data, error } = await supabase
-                    .from('notes')
-                    .update({ title, content })
-                    .eq('id', currentNoteId)
-                    .select();
+            // Set flag and disable button
+            isSavingNote = true;
+            saveNoteBtn.disabled = true;
+            saveNoteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
-                if (error) {
-                    showToast(error.message, 'error');
+            try {
+                if (currentNoteId) {
+                    // Update existing note
+                    const { data, error } = await supabase
+                        .from('notes')
+                        .update({ title, content })
+                        .eq('id', currentNoteId)
+                        .select();
+
+                    if (error) {
+                        showToast(error.message, 'error');
+                    } else {
+                        showToast('Note updated successfully', 'success');
+                        fetchNotes(); 
+                    }
                 } else {
-                    showToast('Note updated successfully', 'success');
-                    fetchNotes(); // Re-fetch notes to update UI
-                }
-            } else {
-                // Create new note
-                const { data, error } = await supabase
-                    .from('notes')
-                    .insert([
-                        { title, content, user_id: currentUser.id }
-                    ])
-                    .select(); // Use .select() to get the inserted data including generated ID
+                    // Create new note
+                    const { data, error } = await supabase
+                        .from('notes')
+                        .insert([
+                            { title, content, user_id: currentUser.id }
+                        ])
+                        .select();
 
-                if (error) {
-                    showToast(error.message, 'error');
-                } else if (data && data.length > 0) {
-                    showToast('Note created successfully', 'success');
-                    fetchNotes(); // Re-fetch notes to update UI
+                    if (error) {
+                        showToast(error.message, 'error');
+                    } else if (data && data.length > 0) {
+                        showToast('Note created successfully', 'success');
+                        fetchNotes();
+                    } else {
+                       showToast('Note creation failed: No data returned.', 'error');
+                    }
                 }
+            } catch (networkError) {
+                showToast('An unexpected error occurred: ' + networkError.message, 'error');
+            } finally {
+                // Reset flag and re-enable button
+                isSavingNote = false;
+                saveNoteBtn.disabled = false;
+                saveNoteBtn.innerHTML = '<i class="fas fa-save"></i> Save Note';
+                noteModal.style.display = 'none';
             }
-            
-            noteModal.style.display = 'none';
         });
 
         // Fetch notes from Supabase
@@ -1385,6 +1401,7 @@
             const { data, error } = await supabase
                 .from('notes')
                 .select('*')
+                .eq('user_id', currentUser.id)
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -1403,6 +1420,8 @@
         }
         
         function createNoteCard(title, content, date = 'Just now', id = null) {
+        if (document.querySelector(`[data-id="${id}"]`)) return;
+
             const noteCard = document.createElement('div');
             noteCard.className = 'note-card';
             noteCard.dataset.id = id; // Store Supabase ID here
