@@ -483,7 +483,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 15px; /* Adjust as needed for collapsed state */
+            cursor: pointer; /* Add cursor pointer to header for clickability */
+        }
+
+        .note-header-right { /* New class for date and icon */
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .note-title {
@@ -497,8 +504,39 @@
             color: var(--gray);
         }
 
+        .expand-icon { /* New class for the chevron icon */
+            transition: transform 0.3s ease;
+            color: var(--gray);
+        }
+
+        /* Hide content and actions by default */
+        .note-card .note-content,
+        .note-card .note-actions {
+            display: none;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease-out;
+        }
+
+        /* Show content and actions when expanded */
+        .note-card.expanded .note-content,
+        .note-card.expanded .note-actions {
+            display: block;
+            opacity: 1;
+            max-height: 500px; /* A large enough value to accommodate content */
+            margin-bottom: 20px; /* Restore margin for content */
+        }
+        
+        .note-card.expanded .note-actions {
+            margin-top: 0; /* Align with content */
+        }
+
+        .note-card.expanded .expand-icon {
+            transform: rotate(180deg); /* Rotate icon when expanded */
+        }
+
         .note-content {
-            margin-bottom: 20px;
             line-height: 1.6;
             color: var(--dark);
             font-size: 0.95rem;
@@ -612,7 +650,7 @@
         }
 
         .dark-mode .modal-content {
-            background: linear-gradient(145deg, #1e1e1e, #252525);
+            background: linear-gradient(145deg, #1e1e1e, #252522);
         }
 
         .close-modal {
@@ -939,6 +977,45 @@
                 height: 85vh;
             }
         }
+
+        /* Styles for date separator inside note card */
+        .note-date-separator {
+            width: 100%;
+            text-align: center;
+            margin: 15px 0; /* Adjust margin as needed */
+            font-size: 0.9rem; /* Smaller font size for inside card */
+            font-weight: 600;
+            color: var(--secondary); /* Different color for date inside card */
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .note-date-separator::before,
+        .note-date-separator::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: var(--secondary);
+            opacity: 0.4;
+            margin: 0 10px;
+        }
+
+        .note-date-separator span {
+            padding: 0 8px;
+            background-color: var(--light); /* Match note card background */
+            z-index: 2;
+            position: relative;
+            border-radius: 5px;
+        }
+
+        .dark-mode .note-date-separator span {
+            background-color: #1e1e1e; /* Match dark mode note card background */
+        }
     </style>
 </head>
 <body>
@@ -1096,7 +1173,7 @@
         const authTitle = document.getElementById('authTitle');
         const authSubtitle = document.getElementById('authSubtitle');
         const authSubmit = document.getElementById('authSubmit');
-        const toggleAuthLink = document.getElementById('toggleAuthLink'); // Renamed to avoid confusion
+        const toggleAuthLink = document.getElementById('toggleAuthLink');
         const nameGroup = document.getElementById('nameGroup');
         const verificationGroup = document.getElementById('verificationGroup');
         const notesContainer = document.getElementById('notesContainer');
@@ -1121,9 +1198,9 @@
         let currentNoteId = null;
         let dropdownOpen = false;
         let isFullscreen = false;
-        let isSavingNote = false; // New flag to prevent duplicate saves
+        let isSavingNote = false;
 
-        // Create particles
+        // Function to create particles
         function createParticles() {
             const colors = ['#4361ee', '#7209b7', '#f72585', '#4cc9f0', '#f9c74f'];
             
@@ -1131,7 +1208,6 @@
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
                 
-                // Random properties
                 const size = Math.random() * 8 + 2;
                 const posX = Math.random() * 100;
                 const posY = Math.random() * 100;
@@ -1192,7 +1268,7 @@
             }
         });
 
-        // Auth Mode Toggle (FIXED: Attach listener only once)
+        // Auth Mode Toggle
         toggleAuthLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
@@ -1204,7 +1280,7 @@
                 authTitle.textContent = 'Welcome Back!';
                 authSubtitle.textContent = 'Please sign in to access your notebook';
                 authSubmit.textContent = 'Sign In';
-                toggleAuthLink.textContent = 'Sign Up'; // Ensure link text updates correctly
+                toggleAuthLink.textContent = 'Sign Up';
                 document.querySelector('#authToggle p').innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuthLink">Sign Up</a>';
                 nameGroup.style.display = 'none';
                 verificationGroup.style.display = 'none';
@@ -1212,7 +1288,7 @@
                 authTitle.textContent = 'Create Account';
                 authSubtitle.textContent = 'Join us to start your notebook journey';
                 authSubmit.textContent = 'Sign Up';
-                toggleAuthLink.textContent = 'Sign In'; // Ensure link text updates correctly
+                toggleAuthLink.textContent = 'Sign In';
                 document.querySelector('#authToggle p').innerHTML = 'Already have an account? <a href="#" id="toggleAuthLink">Sign In</a>';
                 nameGroup.style.display = 'block';
                 verificationGroup.style.display = 'none';
@@ -1225,7 +1301,7 @@
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const name = document.getElementById('name').value; // For signup
+            const name = document.getElementById('name').value;
 
             if (isLoginMode) {
                 const { data, error } = await supabase.auth.signInWithPassword({
@@ -1237,16 +1313,14 @@
                     showToast(error.message, 'error');
                 } else {
                     showToast('Login successful!', 'success');
-                    // updateUIAfterAuth will be called by onAuthStateChange
                 }
             } else {
-                // Sign up
                 const { data, error } = await supabase.auth.signUp({
                     email: email,
                     password: password,
                     options: {
                         data: {
-                            full_name: name // Store full name in user metadata
+                            full_name: name
                         }
                     }
                 });
@@ -1255,7 +1329,7 @@
                     showToast(error.message, 'error');
                 } else if (data.user) {
                     showToast('Signup successful! Please check your email for verification.', 'info');
-                    isLoginMode = true; // Switch back to login mode after signup attempt
+                    isLoginMode = true;
                     updateAuthUI();
                 }
             }
@@ -1268,7 +1342,6 @@
                 showToast(error.message, 'error');
             } else {
                 showToast('Logged out successfully', 'success');
-                // updateUIAfterAuth will be called by onAuthStateChange
             }
         });
 
@@ -1285,8 +1358,8 @@
                 authButtons.style.display = 'flex';
                 dropdownOpen = false;
                 dropdownContent.classList.remove('show');
-                notesContainer.innerHTML = ''; // Clear notes when logged out
-                notesContainer.appendChild(addNoteBtn); // Re-add the add note button
+                notesContainer.innerHTML = '';
+                notesContainer.appendChild(addNoteBtn);
             }
         });
 
@@ -1312,13 +1385,10 @@
             noteModal.style.display = 'none';
         });
 
-        // RECTIFIED CODE FOR SAVE NOTE BUTTON (with isSavingNote flag and console.count for debugging)
+        // Save Note Button
         saveNoteBtn.addEventListener('click', async (e) => {
-            console.count('Save button click handler fired'); // Check how many times this runs
-
             e.preventDefault(); 
             
-            // If already in the process of saving, ignore subsequent clicks
             if (isSavingNote) {
                 console.log('Already saving, ignoring duplicate request.');
                 return;
@@ -1337,14 +1407,12 @@
                 return;
             }
             
-            // Set flag and disable button
             isSavingNote = true;
             saveNoteBtn.disabled = true;
             saveNoteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
             try {
                 if (currentNoteId) {
-                    // Update existing note
                     const { data, error } = await supabase
                         .from('notes')
                         .update({ title, content })
@@ -1358,7 +1426,6 @@
                         fetchNotes(); 
                     }
                 } else {
-                    // Create new note
                     const { data, error } = await supabase
                         .from('notes')
                         .insert([
@@ -1378,7 +1445,6 @@
             } catch (networkError) {
                 showToast('An unexpected error occurred: ' + networkError.message, 'error');
             } finally {
-                // Reset flag and re-enable button
                 isSavingNote = false;
                 saveNoteBtn.disabled = false;
                 saveNoteBtn.innerHTML = '<i class="fas fa-save"></i> Save Note';
@@ -1394,7 +1460,6 @@
                 return;
             }
             
-            // Clear existing notes except the add button
             const existingNotes = notesContainer.querySelectorAll('.note-card:not(.add-note)');
             existingNotes.forEach(note => note.remove());
 
@@ -1407,83 +1472,137 @@
             if (error) {
                 showToast(error.message, 'error');
             } else {
+                const groupedNotes = {};
                 data.forEach(note => {
-                    // Convert ISO string to a more readable format or relative time
-                    const date = new Date(note.created_at).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    });
-                    createNoteCard(note.title, note.content, date, note.id);
+                    if (!groupedNotes[note.title]) {
+                        groupedNotes[note.title] = [];
+                    }
+                    groupedNotes[note.title].push(note);
                 });
+
+                notesContainer.innerHTML = '';
+                notesContainer.appendChild(addNoteBtn);
+
+                for (const title in groupedNotes) {
+                    if (groupedNotes.hasOwnProperty(title)) {
+                        const notesForTitle = groupedNotes[title].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                        let contentHtml = '';
+                        let lastDate = '';
+                        
+                        notesForTitle.forEach((note, index) => {
+                            const noteDate = new Date(note.created_at);
+                            const currentDateFormatted = noteDate.toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+
+                            // Add date separator if date changes
+                            if (currentDateFormatted !== lastDate) { // Only add if date changes
+                                contentHtml += `<div class="note-date-separator"><span>${currentDateFormatted}</span></div>`;
+                                lastDate = currentDateFormatted;
+                            }
+                            // Append note content directly. Each "note" object from Supabase corresponds to a single entry.
+                            // If user wants per-line dating, they need to create new notes with same title.
+                            contentHtml += `${note.content.replace(/\n/g, '<br>')}<br>`;
+                        });
+
+                        const noteCard = document.createElement('div');
+                        noteCard.className = 'note-card';
+                        noteCard.dataset.id = notesForTitle[0].id; 
+                        
+                        noteCard.innerHTML = `
+                            <div class="note-header">
+                                <h3 class="note-title">${title}</h3>
+                                <div class="note-header-right">
+                                    <span class="note-date">${new Date(notesForTitle[0].created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                    <i class="fas fa-chevron-down expand-icon"></i>
+                                </div>
+                            </div>
+                            <div class="note-content">
+                                ${contentHtml}
+                            </div>
+                            <div class="note-actions">
+                                <button class="action-btn edit-btn edit-note">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="action-btn delete-btn delete-note">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        `;
+
+                        notesContainer.insertBefore(noteCard, addNoteBtn);
+
+                        // Event listener for the note header (for toggling expand/collapse)
+                        noteCard.querySelector('.note-header').addEventListener('click', (event) => {
+                            // Close all other expanded note cards
+                            document.querySelectorAll('.note-card.expanded').forEach(card => {
+                                if (card !== noteCard) {
+                                    card.classList.remove('expanded');
+                                }
+                            });
+
+                            // Toggle the clicked note card
+                            noteCard.classList.toggle('expanded');
+                        });
+
+                        // Event listener for note content to prevent closing when clicked
+                        noteCard.querySelector('.note-content').addEventListener('click', (event) => {
+                            event.stopPropagation(); // Prevent the click from bubbling up to the note-header
+                        });
+
+
+                        // Event listeners for edit and delete buttons
+                        noteCard.querySelector('.edit-note').addEventListener('click', (event) => {
+                            event.stopPropagation(); // Prevent click from bubbling up to the note-header
+                            currentNoteId = notesForTitle[0].id;
+                            noteTitle.value = notesForTitle[0].title;
+                            noteContent.value = notesForTitle[0].content;
+                            modalTitle.textContent = 'Edit Note';
+                            noteModal.style.display = 'flex';
+                            isFullscreen = false;
+                            modalContent.classList.remove('fullscreen');
+                            const icon = fullscreenToggle.querySelector('i');
+                            icon.classList.remove('fa-compress');
+                            icon.classList.add('fa-expand');
+                        });
+                        
+                        noteCard.querySelector('.delete-note').addEventListener('click', async (event) => {
+                            event.stopPropagation(); // Prevent click from bubbling up to the note-header
+                            const noteIdToDelete = notesForTitle[0].id;
+                            if (!noteIdToDelete) {
+                                showToast('Error: Note ID missing.', 'error');
+                                return;
+                            }
+
+                            const { error } = await supabase
+                                .from('notes')
+                                .delete()
+                                .eq('id', noteIdToDelete);
+
+                            if (error) {
+                                showToast(error.message, 'error');
+                            } else {
+                                if (notesForTitle.length === 1) {
+                                    noteCard.style.animation = 'fadeOut 0.5s forwards';
+                                    setTimeout(() => {
+                                        noteCard.remove();
+                                    }, 500);
+                                } else {
+                                    fetchNotes();
+                                }
+                                showToast('Note deleted', 'success');
+                            }
+                        });
+                    }
+                }
             }
         }
         
-        function createNoteCard(title, content, date = 'Just now', id = null) {
-        if (document.querySelector(`[data-id="${id}"]`)) return;
-
-            const noteCard = document.createElement('div');
-            noteCard.className = 'note-card';
-            noteCard.dataset.id = id; // Store Supabase ID here
-            
-            noteCard.innerHTML = `
-                <div class="note-header">
-                    <h3 class="note-title">${title}</h3>
-                    <span class="note-date">${date}</span>
-                </div>
-                <div class="note-content">
-                    ${content.replace(/\n/g, '<br>')}
-                </div>
-                <div class="note-actions">
-                    <button class="action-btn edit-btn edit-note">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="action-btn delete-btn delete-note">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </div>
-            `;
-            
-            // Insert before the add note button
-            notesContainer.insertBefore(noteCard, addNoteBtn);
-            
-            // Add event listeners
-            noteCard.querySelector('.edit-note').addEventListener('click', () => {
-                currentNoteId = noteCard.dataset.id;
-                noteTitle.value = title;
-                noteContent.value = content;
-                modalTitle.textContent = 'Edit Note';
-                noteModal.style.display = 'flex';
-                isFullscreen = false;
-                modalContent.classList.remove('fullscreen');
-                const icon = fullscreenToggle.querySelector('i');
-                icon.classList.remove('fa-compress');
-                icon.classList.add('fa-expand');
-            });
-            
-            noteCard.querySelector('.delete-note').addEventListener('click', async () => {
-                const noteIdToDelete = noteCard.dataset.id;
-                if (!noteIdToDelete) {
-                    showToast('Error: Note ID missing.', 'error');
-                    return;
-                }
-
-                const { error } = await supabase
-                    .from('notes')
-                    .delete()
-                    .eq('id', noteIdToDelete);
-
-                if (error) {
-                    showToast(error.message, 'error');
-                } else {
-                    noteCard.style.animation = 'fadeOut 0.5s forwards';
-                    setTimeout(() => {
-                        noteCard.remove();
-                    }, 500);
-                    showToast('Note deleted', 'success');
-                }
-            });
-        }
+        // This function is now a placeholder, its logic is integrated into fetchNotes
+        function createNoteCard() { /* ... */ }
         
         async function updateUIAfterAuth() {
             authSection.style.display = 'none';
@@ -1491,12 +1610,10 @@
             profileDropdown.style.display = 'block';
             authButtons.style.display = 'none';
             
-            // Get user data from currentUser object
             const userFullName = currentUser.user_metadata?.full_name || currentUser.email;
             userName.textContent = userFullName;
             userEmail.textContent = currentUser.email;
             
-            // Fetch and display user-specific notes
             await fetchNotes();
         }
         
@@ -1511,13 +1628,23 @@
 
         // Initialize
         createParticles();
-        // Check initial auth state and update UI
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
                 currentUser = session.user;
                 updateUIAfterAuth();
             } else {
-                updateAuthUI(); // Show auth section if no session
+                updateAuthUI();
+            }
+        });
+
+        // Global click listener to close all expanded cards if click is outside any note card
+        document.addEventListener('click', (event) => {
+            // Check if the click target is outside any note-card and not part of the add-note button
+            // This listener will only trigger if the click is truly outside any note card or the add note button.
+            if (!event.target.closest('.note-card') && !event.target.closest('#addNoteBtn')) {
+                document.querySelectorAll('.note-card.expanded').forEach(card => {
+                    card.classList.remove('expanded');
+                });
             }
         });
     </script>
