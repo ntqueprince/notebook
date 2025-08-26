@@ -1,6 +1,6 @@
 // Initialize Supabase
 const supabaseUrl = 'https://amsrxpzwgjleqebacgpl.supabase.co'; //
-const supabaseKey = process.env.SUPABASE_KEY; //
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtc3J4cHp3Z2psZXFlYmFjZ3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NDQ1MDcsImV4cCI6MjA2NzMyMDUwN30.rka0TwVVu2virQPNThD5q4uBxVwQjjBUp5Odzag2JYc"; //
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // DOM Elements
@@ -513,5 +513,6 @@ document.addEventListener('click', (event) => {
         });
     }
 });
+
 
 
