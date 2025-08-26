@@ -1,6 +1,6 @@
 // Initialize Supabase
 const supabaseUrl = 'https://amsrxpzwgjleqebacgpl.supabase.co'; //
-const supabaseKey = 'process.env.SUPABASE_KEY'; //
+const supabaseKey = process.env.SUPABASE_KEY; //
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // DOM Elements
@@ -513,4 +513,5 @@ document.addEventListener('click', (event) => {
         });
     }
 });
+
 
