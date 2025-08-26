@@ -1007,3 +1007,21 @@
         .dark-mode .note-date-separator span {
             background-color: #1e1e1e; /* Match dark mode note card background */
         }
+        /* Top Add button wrapper */
+.top-add-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* Button ko thoda bada & comfy feel */
+#addNoteTopBtn {
+  padding: 14px 26px;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+/* purana dashed card hide kar dena */
+#addNoteBtn {
+  display: none;
+}
