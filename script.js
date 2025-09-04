@@ -374,16 +374,19 @@ async function fetchNotes() {
             const noteCard = document.createElement('div');
             noteCard.classList.add('note-card');
             noteCard.dataset.id = note.id;
-            noteCard.innerHTML = `
-                <h3>${note.title}</h3>
-                <p>${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}</p>
-                ${note.tags && note.tags.length > 0 ? `<div class="note-tags">${note.tags.map(tag => `<span>#${tag}</span>`).join('')}</div>` : ''}
-                <div class="note-actions">
-                    <button class="btn btn-sm btn-outline view-btn" data-id="${note.id}"><i class="fas fa-eye"></i> View</button>
-                    <button class="btn btn-sm btn-primary edit-btn" data-id="${note.id}"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn btn-sm btn-danger delete-btn" data-id="${note.id}"><i class="fas fa-trash"></i> Delete</button>
-                </div>
-            `;
+noteCard.innerHTML = `
+    <h3>${note.title}</h3>
+    <p>${note.content.substring(0, 100)}${note.content.length > 100 ? '...' : ''}</p>
+    ${note.tags && note.tags.length > 0 ? `<div class="note-tags">${note.tags.map(tag => `<span>#${tag}</span>`).join('')}</div>` : ''}
+    <div class="note-actions">
+        <div class="left-actions">
+            <button class="btn btn-sm btn-outline view-btn" data-id="${note.id}"><i class="fas fa-eye"></i> View</button>
+            <button class="btn btn-sm btn-primary edit-btn" data-id="${note.id}"><i class="fas fa-edit"></i> Edit</button>
+        </div>
+        <button class="btn btn-sm btn-danger delete-btn" data-id="${note.id}"><i class="fas fa-trash"></i> Delete</button>
+    </div>
+`;
+
             notesGrid.appendChild(noteCard);
         });
     }
@@ -513,6 +516,7 @@ document.addEventListener('click', (event) => {
         });
     }
 });
+
 
 
 
