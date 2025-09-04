@@ -1036,3 +1036,19 @@
 #addNoteBtn {
   display: none;
 }
+
+/* ========== Fix Delete Button Alignment ========== */
+.note-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.note-actions .left-actions {
+    display: flex;
+    gap: 8px; /* View और Edit के बीच थोड़ा space */
+}
+
+.note-actions .delete-btn {
+    margin-left: auto; /* Delete हमेशा right side जाएगा */
+}
