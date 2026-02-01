@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CVang Notebook</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CVang Notebook</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
     <div id="particles"></div>
-    
+
     <header>
         <div class="container">
             <div class="header-content">
@@ -68,6 +70,7 @@
                 <h2 id="authTitle">Welcome Back!</h2>
                 <p id="authSubtitle">Please sign in to access your notebook</p>
             </div>
+
             <form id="authForm">
                 <div class="form-group" id="nameGroup" style="display: none;">
                     <label for="name">Full Name</label>
@@ -77,14 +80,24 @@
                     <label for="email">Email Address</label>
                     <input type="email" id="email" class="form-control" placeholder="Enter your email">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="passwordGroup">
                     <label for="password">Password</label>
                     <input type="password" id="password" class="form-control" placeholder="Enter your password">
+                </div>
+                <div class="form-group" id="confirmPasswordGroup" style="display: none;">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-control"
+                        placeholder="Confirm your password">
                 </div>
                 <div class="form-group" id="verificationGroup" style="display: none;">
                     <label for="verificationCode">Verification Code</label>
                     <input type="text" id="verificationCode" class="form-control" placeholder="Enter verification code">
                 </div>
+
+                <div class="forgot-password-link" id="forgotPasswordLink">
+                    <a href="#" id="forgotLink">Forgot Password?</a>
+                </div>
+
                 <button type="submit" class="btn btn-primary" id="authSubmit" style="width: 100%;">
                     Sign In
                 </button>
@@ -100,11 +113,11 @@
             <h2>Your Personal Notebook</h2>
             <p>Create, organize, and manage your notes, tasks, and routines all in one place.</p>
         </div>
-        
+
         <div class="top-add-wrapper">
-          <button id="addNoteTopBtn" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add New Note
-          </button>
+            <button id="addNoteTopBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Note
+            </button>
         </div>
 
         <div class="notes-container" id="notesContainer">
@@ -129,7 +142,8 @@
                     <label for="noteTitle">Title</label>
                     <input type="text" id="noteTitle" class="modal-title-input" placeholder="Note title">
                 </div>
-                <textarea id="noteContent" class="modal-content-textarea" placeholder="Write your note here..."></textarea>
+                <textarea id="noteContent" class="modal-content-textarea"
+                    placeholder="Write your note here..."></textarea>
             </div>
             <div class="modal-footer">
                 <button type="button" class="action-btn delete-btn" id="cancelNoteBtn">
@@ -149,4 +163,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
