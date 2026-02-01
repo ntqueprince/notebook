@@ -47,10 +47,10 @@
                                 </div>
                             </div>
                             <div class="dropdown-actions">
-                                <a href="#" class="dropdown-action">
+                                <a href="#" class="dropdown-action" id="settingsBtn">
                                     <i class="fas fa-cog"></i> Settings
                                 </a>
-                                <a href="#" class="dropdown-action">
+                                <a href="#" class="dropdown-action" id="editProfileBtn">
                                     <i class="fas fa-user-edit"></i> Edit Profile
                                 </a>
                                 <a href="#" class="dropdown-action" id="dropdownLogoutBtn">
@@ -152,6 +152,64 @@
                 <button type="submit" class="action-btn edit-btn" id="saveNoteBtn">
                     <i class="fas fa-save"></i> Save Note
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content settings-modal-content">
+            <button class="close-modal" id="closeSettingsModal">&times;</button>
+            <div class="modal-header">
+                <h3>Account Settings</h3>
+            </div>
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="email">
+                    <i class="fas fa-envelope"></i> Change Email
+                </button>
+                <button class="settings-tab" data-tab="password">
+                    <i class="fas fa-lock"></i> Change Password
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Email Change Form -->
+                <form id="changeEmailForm" class="settings-form active">
+                    <div class="form-group-modal">
+                        <label>Current Email</label>
+                        <input type="email" id="currentEmailDisplay" class="form-control" disabled>
+                    </div>
+                    <div class="form-group-modal">
+                        <label for="newEmail">New Email</label>
+                        <input type="email" id="newEmail" class="form-control" placeholder="Enter new email">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-envelope"></i> Update Email
+                    </button>
+                    <p class="settings-note">
+                        <i class="fas fa-info-circle"></i> A confirmation email will be sent to your new address.
+                    </p>
+                </form>
+
+                <!-- Password Change Form -->
+                <form id="changePasswordForm" class="settings-form">
+                    <div class="form-group-modal">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-control"
+                            placeholder="Enter current password">
+                    </div>
+                    <div class="form-group-modal">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" class="form-control" placeholder="Enter new password">
+                    </div>
+                    <div class="form-group-modal">
+                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" class="form-control"
+                            placeholder="Confirm new password">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-lock"></i> Update Password
+                    </button>
+                </form>
             </div>
         </div>
     </div>
