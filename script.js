@@ -45,6 +45,16 @@ const fullscreenToggle = document.getElementById('fullscreenToggle');
 const modalContent = document.getElementById('modalContent');
 const particlesContainer = document.getElementById('particles');
 
+// Settings Modal Elements
+const settingsModal = document.getElementById('settingsModal');
+const closeSettingsModal = document.getElementById('closeSettingsModal');
+const settingsBtn = document.getElementById('settingsBtn');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const changeEmailForm = document.getElementById('changeEmailForm');
+const changePasswordForm = document.getElementById('changePasswordForm');
+const currentEmailDisplay = document.getElementById('currentEmailDisplay');
+const settingsTabs = document.querySelectorAll('.settings-tab');
+
 // State variables
 let isLoginMode = true;
 let isForgotMode = false;
@@ -630,5 +640,169 @@ function showToast(message, type = 'success') {
 document.addEventListener('click', (event) => {
     if (!event.target.closest('.note-card') && !event.target.closest('#addNoteBtn')) {
         document.querySelectorAll('.note-card.expanded').forEach(c => c.classList.remove('expanded'));
+    }
+});
+
+// ============================================
+// SETTINGS MODAL FUNCTIONALITY
+// ============================================
+
+// Open Settings Modal
+function openSettingsModal() {
+    if (currentUser) {
+        currentEmailDisplay.value = currentUser.email;
+    }
+    settingsModal.style.display = 'flex';
+    dropdownOpen = false;
+    dropdownContent.classList.remove('show');
+}
+
+// Close Settings Modal
+if (closeSettingsModal) {
+    closeSettingsModal.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+    });
+}
+
+// Settings Button Click
+if (settingsBtn) {
+    settingsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSettingsModal();
+    });
+}
+
+// Edit Profile Button Click (also opens settings)
+if (editProfileBtn) {
+    editProfileBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSettingsModal();
+    });
+}
+
+// Tab Switching
+settingsTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        settingsTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const tabName = tab.dataset.tab;
+        document.querySelectorAll('.settings-form').forEach(form => {
+            form.classList.remove('active');
+        });
+
+        if (tabName === 'email') {
+            changeEmailForm.classList.add('active');
+        } else {
+            changePasswordForm.classList.add('active');
+        }
+    });
+});
+
+// Change Email Form
+if (changeEmailForm) {
+    changeEmailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newEmail = document.getElementById('newEmail').value.trim();
+
+        if (!newEmail) {
+            showToast('Please enter a new email', 'error');
+            return;
+        }
+
+        if (newEmail === currentUser.email) {
+            showToast('New email is same as current', 'error');
+            return;
+        }
+
+        const submitBtn = changeEmailForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+        try {
+            const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
+
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                showToast('Confirmation email sent! Check your inbox.', 'success');
+                document.getElementById('newEmail').value = '';
+                settingsModal.style.display = 'none';
+            }
+        } catch (err) {
+            showToast('Error updating email', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-envelope"></i> Update Email';
+        }
+    });
+}
+
+// Change Password Form
+if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            showToast('Please fill all fields', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmNewPassword) {
+            showToast('Passwords do not match', 'error');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showToast('Password must be at least 6 characters', 'error');
+            return;
+        }
+
+        const submitBtn = changePasswordForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+        try {
+            // First verify current password by re-signing in
+            const { error: signInError } = await supabaseClient.auth.signInWithPassword({
+                email: currentUser.email,
+                password: currentPassword
+            });
+
+            if (signInError) {
+                showToast('Current password is incorrect', 'error');
+                return;
+            }
+
+            // Update password
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+            if (error) {
+                showToast(error.message, 'error');
+            } else {
+                showToast('Password updated successfully!', 'success');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+                settingsModal.style.display = 'none';
+            }
+        } catch (err) {
+            showToast('Error updating password', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-lock"></i> Update Password';
+        }
+    });
+}
+
+// Close modal on outside click
+settingsModal?.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+        settingsModal.style.display = 'none';
     }
 });
