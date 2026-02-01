@@ -179,6 +179,31 @@ if (signupBtn) {
     });
 }
 
+// Logout Button Click
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await supabaseClient.auth.signOut();
+
+        // Reset all auth states
+        isLoginMode = true;
+        isForgotMode = false;
+        isResetMode = false;
+        currentUser = null;
+
+        // Reset UI
+        authSection.style.display = 'flex';
+        notesSection.style.display = 'none';
+        profileDropdown.style.display = 'none';
+        authButtons.style.display = 'flex';
+        dropdownContent.classList.remove('show');
+        dropdownOpen = false;
+
+        updateAuthUI();
+        showToast('Logged out successfully', 'success');
+    });
+}
+
 // ============================================
 // AUTH FORM SUBMIT HANDLER
 // ============================================
@@ -261,7 +286,7 @@ if (authForm) {
                 showToast('Error sending reset email', 'error');
             } finally {
                 authSubmit.disabled = false;
-                authSubmit.textContent = 'Send Reset Link';
+                updateAuthUI(); // Let updateAuthUI set the correct button text
             }
             return;
         }
