@@ -2,7 +2,6 @@
 const supabaseUrl = 'https://amsrxpzwgjleqebacgpl.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtc3J4cHp3Z2psZXFlYmFjZ3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3NDQ1MDcsImV4cCI6MjA2NzMyMDUwN30.rka0TwVVu2virQPNThD5q4uBxVwQjjBUp5Odzag2JYc';
 
-// CHANGE: Variable ka naam 'supabase' se badal kar 'supabaseClient' kar diya hai taaki conflict na ho
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // DOM Elements
@@ -22,12 +21,15 @@ const authForm = document.getElementById('authForm');
 const authTitle = document.getElementById('authTitle');
 const authSubtitle = document.getElementById('authSubtitle');
 const authSubmit = document.getElementById('authSubmit');
-const toggleAuthLink = document.getElementById('toggleAuthLink');
 const nameGroup = document.getElementById('nameGroup');
 const verificationGroup = document.getElementById('verificationGroup');
 const notesContainer = document.getElementById('notesContainer');
 const addNoteBtn = document.getElementById('addNoteBtn');
 const addNoteTopBtn = document.getElementById('addNoteTopBtn');
+const passwordGroup = document.getElementById('passwordGroup');
+const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+const forgotLink = document.getElementById('forgotLink');
 
 // Modal Elements
 const noteModal = document.getElementById('noteModal');
@@ -45,139 +47,217 @@ const particlesContainer = document.getElementById('particles');
 
 // State variables
 let isLoginMode = true;
+let isForgotMode = false;
+let isResetMode = false;
 let currentUser = null;
 let currentNoteId = null;
 let dropdownOpen = false;
 let isFullscreen = false;
 let isSavingNote = false;
 
-// Top Button Event Listener
-if (addNoteTopBtn) {
-    addNoteTopBtn.addEventListener('click', () => {
-        currentNoteId = null;
-        modalTitle.textContent = 'Create New Note';
-        noteTitle.value = '';
-        noteContent.value = '';
-        noteModal.style.display = 'flex';
-    });
-}
-
-// Function to create particles
-function createParticles() {
-    const colors = ['#4361ee', '#7209b7', '#f72585', '#4cc9f0', '#f9c74f'];
-
-    if (!particlesContainer) return; // Safety check
-
-    for (let i = 0; i < 50; i++) {
-        const particle = document.createElement('div');
-        particle.classList.add('particle');
-
-        const size = Math.random() * 8 + 2;
-        const posX = Math.random() * 100;
-        const posY = Math.random() * 100;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const animationDuration = Math.random() * 15 + 10;
-        const delay = Math.random() * 5;
-
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
-        particle.style.left = `${posX}%`;
-        particle.style.top = `${posY}%`;
-        particle.style.background = color;
-        particle.style.animation = `float ${animationDuration}s ${delay}s infinite linear`;
-
-        particlesContainer.appendChild(particle);
-    }
-}
-
-// Theme Toggle
-if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const icon = themeToggle.querySelector('i');
-        if (document.body.classList.contains('dark-mode')) {
-            icon.classList.remove('fa-moon');
-            icon.classList.add('fa-sun');
-        } else {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
-    });
-}
-
-// Profile Dropdown Toggle
-if (profileBtn) {
-    profileBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdownOpen = !dropdownOpen;
-        dropdownContent.classList.toggle('show', dropdownOpen);
-    });
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-    if (dropdownOpen && !e.target.closest('.profile-dropdown')) {
-        dropdownOpen = false;
-        dropdownContent.classList.remove('show');
-    }
-});
-
-// Fullscreen toggle
-if (fullscreenToggle) {
-    fullscreenToggle.addEventListener('click', () => {
-        isFullscreen = !isFullscreen;
-        modalContent.classList.toggle('fullscreen', isFullscreen);
-        const icon = fullscreenToggle.querySelector('i');
-        if (isFullscreen) {
-            icon.classList.remove('fa-expand');
-            icon.classList.add('fa-compress');
-        } else {
-            icon.classList.remove('fa-compress');
-            icon.classList.add('fa-expand');
-        }
-    });
-}
-
-// Auth Mode Toggle
-if (toggleAuthLink) {
-    toggleAuthLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        isLoginMode = !isLoginMode;
-        updateAuthUI();
-    });
-}
+// ============================================
+// AUTH MODE FUNCTIONS
+// ============================================
 
 function updateAuthUI() {
-    if (isLoginMode) {
+    const authToggleP = document.getElementById('authToggle');
+
+    if (isResetMode) {
+        authTitle.textContent = 'Set New Password';
+        authSubtitle.textContent = 'Enter your new password below';
+        authSubmit.textContent = 'Update Password';
+        nameGroup.style.display = 'none';
+        passwordGroup.style.display = 'block';
+        confirmPasswordGroup.style.display = 'block';
+        forgotPasswordLink.style.display = 'none';
+        verificationGroup.style.display = 'none';
+        authToggleP.innerHTML = '<a href="#" id="backToLoginLink">Back to Sign In</a>';
+        document.getElementById('password').value = '';
+        document.getElementById('confirmPassword').value = '';
+    } else if (isForgotMode) {
+        authTitle.textContent = 'Reset Password';
+        authSubtitle.textContent = 'Enter your email to receive a reset link';
+        authSubmit.textContent = 'Send Reset Link';
+        nameGroup.style.display = 'none';
+        passwordGroup.style.display = 'none';
+        confirmPasswordGroup.style.display = 'none';
+        forgotPasswordLink.style.display = 'none';
+        verificationGroup.style.display = 'none';
+        authToggleP.innerHTML = 'Remember your password? <a href="#" id="backToLoginLink">Sign In</a>';
+    } else if (isLoginMode) {
         authTitle.textContent = 'Welcome Back!';
         authSubtitle.textContent = 'Please sign in to access your notebook';
         authSubmit.textContent = 'Sign In';
-        toggleAuthLink.textContent = 'Sign Up';
-        document.querySelector('#authToggle p').innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuthLink">Sign Up</a>';
         nameGroup.style.display = 'none';
+        passwordGroup.style.display = 'block';
+        confirmPasswordGroup.style.display = 'none';
+        forgotPasswordLink.style.display = 'block';
         verificationGroup.style.display = 'none';
+        authToggleP.innerHTML = 'Don\'t have an account? <a href="#" id="toggleAuthLink">Sign Up</a>';
     } else {
         authTitle.textContent = 'Create Account';
         authSubtitle.textContent = 'Join us to start your notebook journey';
         authSubmit.textContent = 'Sign Up';
-        toggleAuthLink.textContent = 'Sign In';
-        document.querySelector('#authToggle p').innerHTML = 'Already have an account? <a href="#" id="toggleAuthLink">Sign In</a>';
         nameGroup.style.display = 'block';
+        passwordGroup.style.display = 'block';
+        confirmPasswordGroup.style.display = 'none';
+        forgotPasswordLink.style.display = 'none';
         verificationGroup.style.display = 'none';
+        authToggleP.innerHTML = 'Already have an account? <a href="#" id="toggleAuthLink">Sign In</a>';
+    }
+
+    attachAuthLinkListeners();
+}
+
+function attachAuthLinkListeners() {
+    const toggleLink = document.getElementById('toggleAuthLink');
+    const backLink = document.getElementById('backToLoginLink');
+
+    if (toggleLink) {
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            isForgotMode = false;
+            isResetMode = false;
+            updateAuthUI();
+        });
+    }
+
+    if (backLink) {
+        backLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = true;
+            isForgotMode = false;
+            isResetMode = false;
+            updateAuthUI();
+        });
     }
 }
 
-// --- Supabase Auth Integration ---
+// Forgot Password Link Click
+if (forgotLink) {
+    forgotLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isForgotMode = true;
+        isLoginMode = false;
+        isResetMode = false;
+        updateAuthUI();
+    });
+}
+
+// Header Login Button Click
+if (loginBtn) {
+    loginBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        isLoginMode = true;
+        isForgotMode = false;
+        isResetMode = false;
+        authSection.style.display = 'flex';
+        updateAuthUI();
+    });
+}
+
+// Header Sign Up Button Click
+if (signupBtn) {
+    signupBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        isLoginMode = false;
+        isForgotMode = false;
+        isResetMode = false;
+        authSection.style.display = 'flex';
+        updateAuthUI();
+    });
+}
+
+// ============================================
+// AUTH FORM SUBMIT HANDLER
+// ============================================
+
 if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password')?.value || '';
+        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+        const name = document.getElementById('name')?.value || '';
 
+        // RESET PASSWORD MODE
+        if (isResetMode) {
+            if (!password || !confirmPassword) {
+                showToast('Please fill all fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showToast('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            authSubmit.disabled = true;
+            authSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+
+            try {
+                const { error } = await supabaseClient.auth.updateUser({ password });
+
+                if (error) {
+                    showToast(error.message, 'error');
+                } else {
+                    showToast('Password updated! Please sign in.', 'success');
+                    await supabaseClient.auth.signOut();
+                    isResetMode = false;
+                    isLoginMode = true;
+                    isForgotMode = false;
+                    updateAuthUI();
+                }
+            } catch (err) {
+                showToast('Error updating password', 'error');
+            } finally {
+                authSubmit.disabled = false;
+                authSubmit.textContent = 'Update Password';
+            }
+            return;
+        }
+
+        // FORGOT PASSWORD MODE
+        if (isForgotMode) {
+            if (!email) {
+                showToast('Please enter your email', 'error');
+                return;
+            }
+
+            authSubmit.disabled = true;
+            authSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname
+                });
+
+                if (error) {
+                    showToast(error.message, 'error');
+                } else {
+                    showToast('Reset link sent! Check your email.', 'success');
+                    isForgotMode = false;
+                    isLoginMode = true;
+                    updateAuthUI();
+                }
+            } catch (err) {
+                showToast('Error sending reset email', 'error');
+            } finally {
+                authSubmit.disabled = false;
+                authSubmit.textContent = 'Send Reset Link';
+            }
+            return;
+        }
+
+        // LOGIN MODE
         if (isLoginMode) {
-            // Updated to use supabaseClient
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password,
@@ -188,22 +268,21 @@ if (authForm) {
             } else {
                 showToast('Login successful!', 'success');
             }
-        } else {
-            // Updated to use supabaseClient
+        }
+        // SIGNUP MODE
+        else {
             const { data, error } = await supabaseClient.auth.signUp({
                 email: email,
                 password: password,
                 options: {
-                    data: {
-                        full_name: name
-                    }
+                    data: { full_name: name }
                 }
             });
 
             if (error) {
                 showToast(error.message, 'error');
             } else if (data.user) {
-                showToast('Signup successful! Please check your email for verification.', 'info');
+                showToast('Signup successful! Check your email.', 'info');
                 isLoginMode = true;
                 updateAuthUI();
             }
@@ -211,25 +290,30 @@ if (authForm) {
     });
 }
 
-// Logout
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        // Updated to use supabaseClient
-        const { error } = await supabaseClient.auth.signOut();
-        if (error) {
-            showToast(error.message, 'error');
-        } else {
-            showToast('Logged out successfully', 'success');
-        }
-    });
-}
+// ============================================
+// SUPABASE AUTH STATE CHANGE
+// ============================================
 
-// Supabase Auth State Change Listener
-// Updated to use supabaseClient
 supabaseClient.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event);
+
+    if (event === 'PASSWORD_RECOVERY') {
+        isResetMode = true;
+        isLoginMode = false;
+        isForgotMode = false;
+        currentUser = session?.user;
+        authSection.style.display = 'flex';
+        notesSection.style.display = 'none';
+        updateAuthUI();
+        showToast('Please enter your new password', 'info');
+        return;
+    }
+
     if (event === 'SIGNED_IN' && session) {
         currentUser = session.user;
-        updateUIAfterAuth();
+        if (!isResetMode) {
+            updateUIAfterAuth();
+        }
     } else if (event === 'SIGNED_OUT') {
         currentUser = null;
         authSection.style.display = 'flex';
@@ -243,7 +327,145 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     }
 });
 
-// --- Note Management ---
+// ============================================
+// CHECK FOR PASSWORD RECOVERY ON LOAD
+// ============================================
+
+async function checkForPasswordRecovery() {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const error = hashParams.get('error');
+    const errorDescription = hashParams.get('error_description');
+    const type = hashParams.get('type');
+
+    if (error) {
+        window.history.replaceState(null, '', window.location.pathname);
+        if (error === 'access_denied' && errorDescription?.includes('expired')) {
+            showToast('Reset link expired. Request a new one.', 'error');
+            isForgotMode = true;
+            isLoginMode = false;
+        } else {
+            showToast(errorDescription?.replace(/\+/g, ' ') || 'Something went wrong', 'error');
+        }
+        updateAuthUI();
+        return true;
+    }
+
+    if (type === 'recovery') {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data?.session) {
+            isResetMode = true;
+            isLoginMode = false;
+            isForgotMode = false;
+            currentUser = data.session.user;
+            updateAuthUI();
+            showToast('Please enter your new password', 'info');
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// ============================================
+// INITIALIZE APP
+// ============================================
+
+async function initializeApp() {
+    createParticles();
+
+    const isRecovery = await checkForPasswordRecovery();
+
+    if (!isRecovery) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            updateUIAfterAuth();
+        } else {
+            updateAuthUI();
+        }
+    }
+}
+
+initializeApp();
+
+// ============================================
+// UI HELPERS
+// ============================================
+
+function createParticles() {
+    const colors = ['#4361ee', '#7209b7', '#f72585', '#4cc9f0', '#f9c74f'];
+    if (!particlesContainer) return;
+
+    for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        const size = Math.random() * 8 + 2;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.animation = `float ${Math.random() * 15 + 10}s ${Math.random() * 5}s infinite linear`;
+        particlesContainer.appendChild(particle);
+    }
+}
+
+if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const icon = themeToggle.querySelector('i');
+        icon.classList.toggle('fa-moon');
+        icon.classList.toggle('fa-sun');
+    });
+}
+
+if (profileBtn) {
+    profileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdownOpen = !dropdownOpen;
+        dropdownContent.classList.toggle('show', dropdownOpen);
+    });
+}
+
+document.addEventListener('click', (e) => {
+    if (dropdownOpen && !e.target.closest('.profile-dropdown')) {
+        dropdownOpen = false;
+        dropdownContent.classList.remove('show');
+    }
+});
+
+if (fullscreenToggle) {
+    fullscreenToggle.addEventListener('click', () => {
+        isFullscreen = !isFullscreen;
+        modalContent.classList.toggle('fullscreen', isFullscreen);
+        const icon = fullscreenToggle.querySelector('i');
+        icon.classList.toggle('fa-expand');
+        icon.classList.toggle('fa-compress');
+    });
+}
+
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) showToast(error.message, 'error');
+        else showToast('Logged out successfully', 'success');
+    });
+}
+
+// ============================================
+// NOTE MANAGEMENT
+// ============================================
+
+if (addNoteTopBtn) {
+    addNoteTopBtn.addEventListener('click', () => {
+        currentNoteId = null;
+        modalTitle.textContent = 'Create New Note';
+        noteTitle.value = '';
+        noteContent.value = '';
+        noteModal.style.display = 'flex';
+    });
+}
+
 if (addNoteBtn) {
     addNoteBtn.addEventListener('click', () => {
         currentNoteId = null;
@@ -253,33 +475,16 @@ if (addNoteBtn) {
         noteModal.style.display = 'flex';
         isFullscreen = false;
         modalContent.classList.remove('fullscreen');
-        const icon = fullscreenToggle.querySelector('i');
-        icon.classList.remove('fa-compress');
-        icon.classList.add('fa-expand');
     });
 }
 
-if (closeModal) {
-    closeModal.addEventListener('click', () => {
-        noteModal.style.display = 'none';
-    });
-}
+if (closeModal) closeModal.addEventListener('click', () => noteModal.style.display = 'none');
+if (cancelNoteBtn) cancelNoteBtn.addEventListener('click', () => noteModal.style.display = 'none');
 
-if (cancelNoteBtn) {
-    cancelNoteBtn.addEventListener('click', () => {
-        noteModal.style.display = 'none';
-    });
-}
-
-// Save Note Button
 if (saveNoteBtn) {
     saveNoteBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-
-        if (isSavingNote) {
-            console.log('Already saving, ignoring duplicate request.');
-            return;
-        }
+        if (isSavingNote) return;
 
         const title = noteTitle.value;
         const content = noteContent.value;
@@ -300,39 +505,16 @@ if (saveNoteBtn) {
 
         try {
             if (currentNoteId) {
-                // Updated to use supabaseClient
-                const { data, error } = await supabaseClient
-                    .from('notes')
-                    .update({ title, content })
-                    .eq('id', currentNoteId)
-                    .select();
-
-                if (error) {
-                    showToast(error.message, 'error');
-                } else {
-                    showToast('Note updated successfully', 'success');
-                    fetchNotes();
-                }
+                const { error } = await supabaseClient.from('notes').update({ title, content }).eq('id', currentNoteId);
+                if (error) showToast(error.message, 'error');
+                else { showToast('Note updated!', 'success'); fetchNotes(); }
             } else {
-                // Updated to use supabaseClient
-                const { data, error } = await supabaseClient
-                    .from('notes')
-                    .insert([
-                        { title, content, user_id: currentUser.id }
-                    ])
-                    .select();
-
-                if (error) {
-                    showToast(error.message, 'error');
-                } else if (data && data.length > 0) {
-                    showToast('Note created successfully', 'success');
-                    fetchNotes();
-                } else {
-                    showToast('Note creation failed: No data returned.', 'error');
-                }
+                const { data, error } = await supabaseClient.from('notes').insert([{ title, content, user_id: currentUser.id }]).select();
+                if (error) showToast(error.message, 'error');
+                else if (data?.length > 0) { showToast('Note created!', 'success'); fetchNotes(); }
             }
-        } catch (networkError) {
-            showToast('An unexpected error occurred: ' + networkError.message, 'error');
+        } catch (err) {
+            showToast('Error saving note', 'error');
         } finally {
             isSavingNote = false;
             saveNoteBtn.disabled = false;
@@ -342,7 +524,6 @@ if (saveNoteBtn) {
     });
 }
 
-// Fetch notes from Supabase
 async function fetchNotes() {
     if (!currentUser) {
         notesContainer.innerHTML = '';
@@ -350,146 +531,83 @@ async function fetchNotes() {
         return;
     }
 
-    // Clear existing notes but keep the add button
-    const existingNotes = notesContainer.querySelectorAll('.note-card:not(.add-note)');
-    existingNotes.forEach(note => note.remove());
+    notesContainer.querySelectorAll('.note-card:not(.add-note)').forEach(n => n.remove());
 
-    // Updated to use supabaseClient
-    const { data, error } = await supabaseClient
-        .from('notes')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('notes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
 
     if (error) {
         showToast(error.message, 'error');
-    } else {
-        const groupedNotes = {};
-        data.forEach(note => {
-            if (!groupedNotes[note.title]) {
-                groupedNotes[note.title] = [];
+        return;
+    }
+
+    const groupedNotes = {};
+    data.forEach(note => {
+        if (!groupedNotes[note.title]) groupedNotes[note.title] = [];
+        groupedNotes[note.title].push(note);
+    });
+
+    notesContainer.innerHTML = '';
+    if (addNoteBtn) notesContainer.appendChild(addNoteBtn);
+
+    for (const title in groupedNotes) {
+        const notesForTitle = groupedNotes[title].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        let contentHtml = '';
+        let lastDate = '';
+
+        notesForTitle.forEach((note) => {
+            const dateStr = new Date(note.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            if (dateStr !== lastDate) {
+                contentHtml += `<div class="note-date-separator"><span>${dateStr}</span></div>`;
+                lastDate = dateStr;
             }
-            groupedNotes[note.title].push(note);
+            contentHtml += `${note.content.replace(/\n/g, '<br>')}<br>`;
         });
 
-        // Ensure notesContainer is ready and has the button
-        notesContainer.innerHTML = '';
-        if (addNoteBtn) notesContainer.appendChild(addNoteBtn);
+        const noteCard = document.createElement('div');
+        noteCard.className = 'note-card';
+        noteCard.dataset.id = notesForTitle[0].id;
+        noteCard.innerHTML = `
+            <div class="note-header">
+                <h3 class="note-title">${title}</h3>
+                <div class="note-header-right">
+                    <span class="note-date">${new Date(notesForTitle[0].created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    <i class="fas fa-chevron-down expand-icon"></i>
+                </div>
+            </div>
+            <div class="note-content">${contentHtml}</div>
+            <div class="note-actions">
+                <div class="left-actions">
+                    <button class="action-btn edit-btn edit-note"><i class="fas fa-edit"></i> Edit</button>
+                </div>
+                <button class="action-btn delete-btn delete-note"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        `;
 
-        for (const title in groupedNotes) {
-            if (groupedNotes.hasOwnProperty(title)) {
-                const notesForTitle = groupedNotes[title].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        notesContainer.insertBefore(noteCard, addNoteBtn);
 
-                let contentHtml = '';
-                let lastDate = '';
+        noteCard.querySelector('.note-header').addEventListener('click', () => {
+            document.querySelectorAll('.note-card.expanded').forEach(c => { if (c !== noteCard) c.classList.remove('expanded'); });
+            noteCard.classList.toggle('expanded');
+        });
 
-                notesForTitle.forEach((note, index) => {
-                    const noteDate = new Date(note.created_at);
-                    const currentDateFormatted = noteDate.toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    });
+        noteCard.querySelector('.note-content').addEventListener('click', e => e.stopPropagation());
 
-                    // Add date separator if date changes
-                    if (currentDateFormatted !== lastDate) {
-                        contentHtml += `<div class="note-date-separator"><span>${currentDateFormatted}</span></div>`;
-                        lastDate = currentDateFormatted;
-                    }
-                    contentHtml += `${note.content.replace(/\n/g, '<br>')}<br>`;
-                });
+        noteCard.querySelector('.edit-note').addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentNoteId = notesForTitle[0].id;
+            noteTitle.value = notesForTitle[0].title;
+            noteContent.value = notesForTitle[0].content;
+            modalTitle.textContent = 'Edit Note';
+            noteModal.style.display = 'flex';
+        });
 
-                const noteCard = document.createElement('div');
-                noteCard.className = 'note-card';
-                noteCard.dataset.id = notesForTitle[0].id;
-
-                noteCard.innerHTML = `
-                    <div class="note-header">
-                        <h3 class="note-title">${title}</h3>
-                        <div class="note-header-right">
-                            <span class="note-date">${new Date(notesForTitle[0].created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                            <i class="fas fa-chevron-down expand-icon"></i>
-                        </div>
-                    </div>
-                    <div class="note-content">
-                        ${contentHtml}
-                    </div>
-                    <div class="note-actions">
-                        <div class="left-actions">
-                            <button class="action-btn edit-btn edit-note">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        </div>
-                        <button class="action-btn delete-btn delete-note">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                `;
-
-                notesContainer.insertBefore(noteCard, addNoteBtn);
-
-                // Event listener for the note header (for toggling expand/collapse)
-                noteCard.querySelector('.note-header').addEventListener('click', (event) => {
-                    document.querySelectorAll('.note-card.expanded').forEach(card => {
-                        if (card !== noteCard) {
-                            card.classList.remove('expanded');
-                        }
-                    });
-                    noteCard.classList.toggle('expanded');
-                });
-
-                noteCard.querySelector('.note-content').addEventListener('click', (event) => {
-                    event.stopPropagation(); 
-                });
-
-                // Edit Note
-                noteCard.querySelector('.edit-note').addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    currentNoteId = notesForTitle[0].id;
-                    noteTitle.value = notesForTitle[0].title;
-                    noteContent.value = notesForTitle[0].content;
-                    modalTitle.textContent = 'Edit Note';
-                    noteModal.style.display = 'flex';
-                    isFullscreen = false;
-                    modalContent.classList.remove('fullscreen');
-                    const icon = fullscreenToggle.querySelector('i');
-                    icon.classList.remove('fa-compress');
-                    icon.classList.add('fa-expand');
-                });
-
-                // Delete Note
-                noteCard.querySelector('.delete-note').addEventListener('click', async (event) => {
-                    event.stopPropagation();
-                    const noteIdToDelete = notesForTitle[0].id;
-                    if (!noteIdToDelete) {
-                        showToast('Error: Note ID missing.', 'error');
-                        return;
-                    }
-
-                    if (!confirm('Are you sure you want to delete this note?')) return;
-
-                    // Updated to use supabaseClient
-                    const { error } = await supabaseClient
-                        .from('notes')
-                        .delete()
-                        .eq('id', noteIdToDelete);
-
-                    if (error) {
-                        showToast(error.message, 'error');
-                    } else {
-                        if (notesForTitle.length === 1) {
-                            noteCard.style.animation = 'fadeOut 0.5s forwards';
-                            setTimeout(() => {
-                                noteCard.remove();
-                            }, 500);
-                        } else {
-                            fetchNotes();
-                        }
-                        showToast('Note deleted', 'success');
-                    }
-                });
-            }
-        }
+        noteCard.querySelector('.delete-note').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!confirm('Delete this note?')) return;
+            const { error } = await supabaseClient.from('notes').delete().eq('id', notesForTitle[0].id);
+            if (error) showToast(error.message, 'error');
+            else { noteCard.remove(); showToast('Note deleted', 'success'); }
+        });
     }
 }
 
@@ -498,40 +616,19 @@ async function updateUIAfterAuth() {
     notesSection.style.display = 'block';
     profileDropdown.style.display = 'block';
     authButtons.style.display = 'none';
-
-    const userFullName = currentUser.user_metadata?.full_name || currentUser.email;
-    userName.textContent = userFullName;
+    userName.textContent = currentUser.user_metadata?.full_name || currentUser.email;
     userEmail.textContent = currentUser.email;
-
     await fetchNotes();
 }
 
 function showToast(message, type = 'success') {
     toastMessage.textContent = message;
     toast.className = `toast ${type} show`;
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+    setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Initialize
-createParticles();
-// Updated to use supabaseClient
-supabaseClient.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-        currentUser = session.user;
-        updateUIAfterAuth();
-    } else {
-        updateAuthUI();
-    }
-});
-
-// Global click listener
 document.addEventListener('click', (event) => {
     if (!event.target.closest('.note-card') && !event.target.closest('#addNoteBtn')) {
-        document.querySelectorAll('.note-card.expanded').forEach(card => {
-            card.classList.remove('expanded');
-        });
+        document.querySelectorAll('.note-card.expanded').forEach(c => c.classList.remove('expanded'));
     }
 });
